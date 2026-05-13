@@ -1,0 +1,22 @@
+# Секреты и данные
+.env
+*.db
+blocked_ips.json
+ssl/
+logs/
+*.log
+Types_of_attacks.txt
+
+# Node.js
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/

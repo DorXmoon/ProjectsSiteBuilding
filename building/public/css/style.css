@@ -1,0 +1,1241 @@
+/* ============================================
+   СТРОИТЕЛЬНАЯ КОМПАНИЯ - СВЕТЛАЯ ВЕРСИЯ
+   ============================================ */
+
+/* ---------- 3D BACKGROUND (three.js canvas) ---------- */
+.bg-stage {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+}
+.bg-stage canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ---------- ОБНУЛЕНИЕ ---------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    /* блокировка pinch-zoom на тач-устройствах,
+       обычная прокрутка работает как раньше */
+    touch-action: pan-x pan-y;
+    /* scrollbar-gutter резервирует место под скроллбар всегда —
+       при открытии модалки сайт больше не прыгает вправо */
+    scrollbar-gutter: stable;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    color: #2d3e50;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    touch-action: pan-x pan-y;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', 'Inter', sans-serif;
+    font-weight: 600;
+}
+
+h2 {
+    font-size: 2.2rem;
+    margin-bottom: 40px;
+    text-align: center;
+    color: #1a5f7a;
+    position: relative;
+    padding-bottom: 15px;
+}
+
+h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: #1a5f7a;
+}
+
+/* ---------- НАВИГАЦИЯ ---------- */
+.navbar {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: 1px solid #e0e4e8;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.nav-links {
+    display: flex;
+    gap: 25px;
+    list-style: none;
+}
+
+.nav-links a {
+    color: #2d3e50;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-links a:hover {
+    color: #1a5f7a;
+}
+
+.callback-btn {
+    background: #1a5f7a;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 30px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.callback-btn:hover {
+    background: #0e3e52;
+    transform: translateY(-2px);
+}
+
+/* ---------- БУРГЕР-МЕНЮ (МОБИЛЬНЫЕ) ---------- */
+.burger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    gap: 5px;
+    z-index: 1002;
+}
+
+.burger span {
+    width: 25px;
+    height: 2px;
+    background: #1a5f7a;
+    transition: 0.3s;
+}
+
+/* ---------- HERO ---------- */
+.hero {
+    /* 100vh на iOS Safari включает URL-бар → hero вылазит на ~70px;
+       svh/dvh учитывают это, vh — фоллбэк для старых браузеров */
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(135deg, #e8edf2 0%, #f0f2f5 100%);
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    color: #1a5f7a;
+}
+
+.hero-content p {
+    font-size: 1.2rem;
+    color: #5a6e7a;
+    margin-bottom: 30px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* ---------- КНОПКИ ---------- */
+.btn {
+    display: inline-block;
+    padding: 12px 32px;
+    border-radius: 40px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background: #1a5f7a;
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: #0e3e52;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 2px solid #1a5f7a;
+    color: #1a5f7a;
+}
+
+.btn-secondary:hover {
+    background: rgba(26, 95, 122, 0.1);
+    transform: translateY(-2px);
+}
+
+/* ---------- КОНТЕЙНЕР ---------- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 20px;
+    overflow-x: hidden;
+}
+
+/* ---------- КАРТОЧКИ УСЛУГ ---------- */
+.services-grid-2x2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin-top: 40px;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.service-card {
+    background: white;
+    border-radius: 16px;
+    padding: 35px 25px;
+    text-align: center;
+    transition: all 0.3s;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    border: 1px solid #e0e4e8;
+}
+
+.service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(26, 95, 122, 0.1);
+    border-color: #1a5f7a;
+}
+
+.service-card .icon svg {
+    width: 60px;
+    height: 60px;
+    stroke: #1a5f7a;
+    stroke-width: 1.5;
+    fill: none;
+    margin-bottom: 20px;
+}
+
+.service-card h3 {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    color: #2d3e50;
+}
+
+.service-card p {
+    color: #6a7e8a;
+    line-height: 1.5;
+}
+
+.price-count {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 6px 16px;
+    background: #e8edf2;
+    border-radius: 30px;
+    color: #1a5f7a;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* ---------- ПРЕИМУЩЕСТВА ---------- */
+.advantages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.advantage-card {
+    text-align: center;
+    padding: 25px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s;
+    border: 1px solid #e0e4e8;
+}
+
+.advantage-card:hover {
+    transform: translateY(-3px);
+    border-color: #1a5f7a;
+}
+
+.advantage-card .icon svg {
+    width: 48px;
+    height: 48px;
+    stroke: #1a5f7a;
+    stroke-width: 1.5;
+    fill: none;
+    margin-bottom: 15px;
+}
+
+.advantage-card h4 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    color: #2d3e50;
+}
+
+.advantage-card p {
+    font-size: 0.9rem;
+    color: #6a7e8a;
+}
+
+/* ---------- СПИСОК УСЛУГ ---------- */
+.services-list {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #e0e4e8;
+}
+
+.service-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 25px;
+    border-bottom: 1px solid #e0e4e8;
+    transition: background 0.3s;
+}
+
+.service-item:hover {
+    background: #f8fafc;
+}
+
+.service-name {
+    font-size: 1rem;
+    color: #2d3e50;
+    font-weight: 500;
+}
+
+.request-btn {
+    background: transparent;
+    border: 1px solid #1a5f7a;
+    padding: 8px 20px;
+    border-radius: 30px;
+    color: #1a5f7a;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+}
+
+.request-btn:hover {
+    background: #1a5f7a;
+    color: white;
+}
+
+/* ---------- КОНТАКТЫ ---------- */
+.contacts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.contact-card {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s;
+    border: 1px solid #e0e4e8;
+    cursor: pointer;
+}
+
+.contact-card:hover {
+    border-color: #1a5f7a;
+    transform: translateY(-3px);
+}
+
+.contact-card:active {
+    transform: scale(0.98);
+}
+
+.contact-card .icon svg {
+    width: 40px;
+    height: 40px;
+    stroke: #1a5f7a;
+    stroke-width: 1.5;
+    fill: none;
+    margin-bottom: 15px;
+}
+
+.contact-card h3 {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    color: #2d3e50;
+}
+
+.contact-card p, .contact-card a {
+    color: #6a7e8a;
+    text-decoration: none;
+}
+
+.contact-card a:hover {
+    color: #1a5f7a;
+}
+
+/* ===== ЯРКИЕ КНОПКИ В КОНТАКТАХ ===== */
+.contacts-buttons .btn-secondary {
+    background: linear-gradient(135deg, #1a5f7a, #0e3e52);
+    border: none;
+    color: white;
+    padding: 12px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 40px;
+    box-shadow: 0 4px 12px rgba(26, 95, 122, 0.3);
+    transition: all 0.3s ease;
+}
+
+.contacts-buttons .btn-secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(26, 95, 122, 0.4);
+    background: linear-gradient(135deg, #0e3e52, #1a5f7a);
+}
+
+@media (max-width: 768px) {
+    .contacts-buttons .btn-secondary {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        min-width: 130px;
+    }
+}
+
+/* ---------- КНОПКИ КОНТАКТОВ (ПК - ПО ЦЕНТРУ) ---------- */
+.contacts-buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+
+/* ---------- ССЫЛКИ НА КАРТЫ (ПК - ПО ЦЕНТРУ) ---------- */
+.map-links {
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 30px;
+}
+
+.map-links a {
+    margin: 0 8px;
+    text-decoration: none;
+    color: #1a5f7a;
+}
+
+.map-links a:hover {
+    text-decoration: underline;
+}
+
+/* ---------- КАРТА ---------- */
+.map-container {
+    background: white;
+    border-radius: 20px;
+    padding: 0;
+    margin-top: 40px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    border: 10px solid #e0e4e8;
+    overflow: hidden;
+}
+
+.map-container:hover {
+    box-shadow: 0 8px 35px rgba(0, 0, 0, 0.12);
+    border-color: #1a5f7a;
+}
+
+.map-frame {
+    width: 100%;
+    height: 450px;
+    border-radius: 0;
+    border: none;
+    display: block;
+}
+
+/* ---------- ФУТЕР ---------- */
+footer {
+    background: #1a2a30;
+    color: #b0c0c8;
+    padding: 40px 20px 20px;
+    margin-top: 60px;
+}
+
+.footer-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.footer-item h4 {
+    color: #fff;
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+.footer-item p, .footer-item a {
+    color: #b0c0c8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    line-height: 1.8;
+}
+
+.footer-item a:hover {
+    color: #fff;
+}
+
+/* ===== ФУТЕР: КНОПКА ОБРАТНЫЙ ЗВОНОК (ПК) ===== */
+.footer-item .callback-btn {
+    background: #1a5f7a;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 220px;
+    margin-top: 10px;
+}
+
+.footer-item .callback-btn:hover {
+    background: #0e3e52;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(26, 95, 122, 0.3);
+}
+
+/* ===== ФУТЕР: КНОПКА ОБРАТНЫЙ ЗВОНОК (МОБИЛЬНЫЕ) ===== */
+@media (max-width: 768px) {
+    .footer-item .callback-btn {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+        width: 100%;
+        max-width: 280px;
+        margin: 10px auto 0;
+        display: block;
+    }
+    
+    /* Центрируем кнопку в мобильном футере */
+    .footer-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-item .callback-btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        max-width: 260px;
+    }
+}
+
+/* ---------- МОДАЛЬНЫЕ ОКНА ---------- */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 35px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    /* WCAG hit-target: ≥44×44 — раньше был ~24×24 */
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    line-height: 1;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s, background 0.2s;
+}
+
+.close-modal:hover {
+    color: #1a5f7a;
+}
+
+.modal-content h3 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #1a5f7a;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #2d3e50;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #e0e4e8;
+    border-radius: 10px;
+    color: #2d3e50;
+    font-size: 16px;
+    transition: border 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #1a5f7a;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: #1a5f7a;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.submit-btn:hover {
+    background: #0e3e52;
+}
+
+/* ===== СТИЛИ ДЛЯ СТРАНИЦЫ УСЛУГ ===== */
+.service-category {
+    margin-bottom: 60px;
+}
+
+.service-category h3 {
+    font-size: 1.8rem;
+    color: #1a5f7a;
+    border-left: 4px solid #1a5f7a;
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+.service-category .price-range {
+    background: #e8edf2;
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: inline-block;
+    margin-bottom: 20px;
+    font-weight: 600;
+    color: #1a5f7a;
+    font-size: 1rem;
+}
+
+.category-request-btn {
+    background: #1a5f7a;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.category-request-btn:hover {
+    background: #0e3e52;
+    transform: translateY(-2px);
+}
+
+.service-footer {
+    text-align: center;
+    margin-top: 15px;
+    padding: 15px 20px;
+    background: #f8fafc;
+    border-radius: 16px;
+    color: #2d3e50;
+}
+
+.service-footer strong {
+    color: #1a5f7a;
+}
+
+/* ===== АДАПТИВНОСТЬ (МОБИЛЬНЫЕ УСТРОЙСТВА 768px И МЕНЬШЕ) ===== */
+@media (max-width: 768px) {
+    /* НАВИГАЦИЯ */
+    .navbar {
+        top: 10px;
+        right: 10px;
+        padding: 8px 15px;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(15px);
+        border-radius: 40px;
+        z-index: 1002;
+    }
+    
+    .burger {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        gap: 4px;
+        z-index: 1003;
+    }
+    
+    .burger span {
+        width: 22px;
+        height: 2px;
+        background: #1a5f7a;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+    
+    .burger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(4px, 4px);
+    }
+    
+    .burger.active span:nth-child(2) {
+        opacity: 0;
+        transform: scale(0);
+    }
+    
+    .burger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(5px, -5px);
+    }
+    
+    /* ОВЕРЛЕЙ */
+    .menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .menu-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* ВЕРТИКАЛЬНОЕ МЕНЮ */
+    .nav-links {
+        position: fixed;
+        top: 70px;
+        right: -280px;
+        width: 240px;
+        height: auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1001;
+        padding: 16px 12px;
+        border: 1px solid rgba(26, 95, 122, 0.15);
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .nav-links.active {
+        right: 10px;
+    }
+    
+    .nav-links li {
+        width: 100%;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .nav-links a {
+        display: block;
+        padding: 12px 16px;
+        font-size: 16px;
+        font-weight: 500;
+        color: #2d3e50;
+        text-decoration: none;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.25s ease;
+        text-align: center;
+        border: 1px solid #e0e4e8;
+    }
+    
+    .nav-links a:hover {
+        background: #1a5f7a;
+        color: white;
+        border-color: #1a5f7a;
+        transform: translateX(4px);
+    }
+    
+    .callback-btn {
+        padding: 6px 14px;
+        font-size: 12px;
+        z-index: 1003;
+        position: relative;
+    }
+    
+    /* КОНТАКТЫ: 2 КОЛОНКИ (для мобильных) */
+    .contacts-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 15px !important;
+        margin-top: 30px !important;
+    }
+    
+    .contact-card {
+        padding: 15px 10px !important;
+    }
+    
+    .contact-card .icon svg {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    
+    .contact-card h3 {
+        font-size: 0.9rem !important;
+        margin-bottom: 8px !important;
+    }
+    
+    .contact-card p {
+        font-size: 0.8rem !important;
+        word-break: break-word !important;
+    }
+    
+    /* КНОПКИ КОНТАКТОВ (горизонтально, по центру) */
+    .contacts-buttons {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 12px !important;
+        margin-top: 30px !important;
+        flex-wrap: wrap !important;
+    }
+    
+    .contacts-buttons .btn,
+    .contacts-buttons .btn-secondary {
+        width: auto !important;
+        min-width: 120px !important;
+        padding: 10px 16px !important;
+        font-size: 0.85rem !important;
+        margin: 0 !important;
+        text-align: center !important;
+    }
+    
+    /* ССЫЛКИ НА КАРТЫ (слева на мобильных) */
+    .map-links {
+        text-align: left !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        margin-top: 15px !important;
+        margin-bottom: 30px !important;
+    }
+    
+    .map-links a {
+        display: inline-block !important;
+        padding: 8px 12px !important;
+        background: #e8edf2 !important;
+        border-radius: 20px !important;
+        text-decoration: none !important;
+        font-size: 13px !important;
+        margin: 0 !important;
+    }
+    
+    /* КАРТА */
+    .map-frame {
+        height: 250px !important;
+    }
+    
+    /* ОСТАЛЬНЫЕ МОБИЛЬНЫЕ СТИЛИ */
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+    
+    h2 {
+        font-size: 1.8rem;
+    }
+    
+    .container {
+        padding: 50px 15px;
+    }
+    
+    .services-grid-2x2,
+    .services-grid,
+    .advantages-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .service-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    .footer-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 25px;
+    }
+    
+    .modal-content {
+        padding: 25px;
+        width: 95%;
+    }
+    
+    .modal-content h3 {
+        font-size: 1.3rem;
+    }
+}
+
+/* ===== МАЛЕНЬКИЕ ТЕЛЕФОНЫ (480px И МЕНЬШЕ) ===== */
+@media (max-width: 480px) {
+    .hero-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.85rem;
+        width: 220px;
+    }
+    
+    .service-card {
+        padding: 20px;
+    }
+    
+    .service-card .icon svg {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .service-card h3 {
+        font-size: 1.2rem;
+    }
+    
+    .map-frame {
+        height: 200px;
+    }
+    
+    .footer-item h4 {
+        font-size: 1rem;
+    }
+    
+    .footer-item p {
+        font-size: 0.85rem;
+    }
+    
+    /* Кнопки контактов на маленьких телефонах */
+    .contacts-buttons {
+        gap: 8px !important;
+    }
+    
+    .contacts-buttons .btn,
+    .contacts-buttons .btn-secondary {
+        min-width: 100px !important;
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+    }
+    
+    .map-links a {
+        font-size: 11px !important;
+        padding: 6px 10px !important;
+    }
+}
+
+/* ===== ОСНОВНОЙ ФОН СТРАНИЦЫ (ДЛЯ ЕДИНОЙ МАТРИЦЫ) ===== */
+body {
+    background: linear-gradient(135deg, #e8edf2 0%, #f0f2f5 100%);
+    position: relative;
+}
+
+/* Убираем фоны у секций, чтобы был виден единый фон матрицы */
+.hero,
+.container,
+footer {
+    background: transparent !important;
+}
+
+/* Лёгкое свечение для карточек */
+.service-card,
+.advantage-card,
+.contact-card,
+.services-list {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(2px);
+}
+
+/* Затемняем фон модального окна, чтобы матрица не мешала */
+.modal {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+    background: white;
+}
+/* ===== ФУТЕР (возвращаем оригинальный вид) ===== */
+footer {
+    background: #1a2a30 !important;
+    color: #b0c0c8 !important;
+    position: relative;
+    z-index: 10;
+}
+
+.footer-item h4 {
+    color: #ffffff !important;
+}
+
+.footer-item p,
+.footer-item a {
+    color: #b0c0c8 !important;
+}
+
+.footer-item a:hover {
+    color: #ffffff !important;
+}
+
+.footer-item .callback-btn {
+    background: #1a5f7a !important;
+    color: white !important;
+}
+
+.footer-item .callback-btn:hover {
+    background: #0e3e52 !important;
+}
+
+/* Футер на мобильных */
+@media (max-width: 768px) {
+    footer {
+        background: #1a2a30 !important;
+    }
+}
+
+/* ===== КНОПКА НА ВСЮ ШИРИНУ КОНТЕЙНЕРА ===== */
+.service-category {
+    background: white;
+    border-radius: 24px;
+    padding: 25px;
+    margin-bottom: 40px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e0e4e8;
+}
+
+.category-header h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.6rem;
+}
+
+/* Кнопка на всю ширину */
+.category-request-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #1a5f7a, #0e3e52);
+    border: none;
+    padding: 14px 20px;
+    border-radius: 16px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    margin: 15px 0 20px;
+}
+
+.category-request-btn .btn-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    margin-top: 5px;
+}
+
+.category-request-btn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #0e3e52, #1a5f7a);
+}
+
+.price-range {
+    background: #e8edf2;
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: inline-block;
+    margin-bottom: 20px;
+    font-weight: 600;
+    color: #1a5f7a;
+    font-size: 1rem;
+}
+/* ====================== ОТЗЫВЫ КЛИЕНТОВ ====================== */
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 22px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.review-card {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid #e0e4e8;
+    border-radius: 14px;
+    padding: 24px 22px;
+    box-shadow: 0 4px 14px rgba(26, 95, 122, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.review-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(26, 95, 122, 0.12);
+}
+
+/* Место под фото клиента — пользователь подставит свои JPG */
+.review-photo {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e8edf2 0%, #d6dde6 100%);
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(26, 95, 122, 0.18);
+    margin-bottom: 14px;
+    background-size: cover;
+    background-position: center;
+    /* placeholder-силуэт */
+    position: relative;
+}
+.review-photo::after {
+    content: '👤';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.3rem;
+    color: #b0bac3;
+    opacity: 0.7;
+}
+.review-photo[style*="background-image"]::after { content: none; }
+
+.review-stars {
+    color: #f5b301;
+    font-size: 1.05rem;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.review-text {
+    color: #45525f;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin-bottom: 14px;
+}
+
+.review-author {
+    font-weight: 600;
+    color: #1a5f7a;
+    font-size: 0.95rem;
+}
+.review-author span {
+    display: block;
+    font-weight: 400;
+    color: #7a8a96;
+    font-size: 0.82rem;
+    margin-top: 3px;
+}
+
+/* Мобильная оптимизация — отзывы в одну колонку */
+@media (max-width: 600px) {
+    .reviews-grid { gap: 16px; }
+    .review-card { padding: 20px 18px; }
+    .review-photo { width: 72px; height: 72px; }
+}
+
+/* iOS Safari: убираем «прыжок» при тапе на карточку */
+.review-card,
+.contact-card {
+    -webkit-tap-highlight-color: transparent;
+}

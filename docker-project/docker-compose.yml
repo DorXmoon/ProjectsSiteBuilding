@@ -1,0 +1,41 @@
+# ============================================================
+# Стек: Nginx (front, SSL termination) + Node.js (Express, бэк)
+# На роутере открыть один порт: 52211 TCP → этот хост.
+# Также рекомендуется проброс 80 → 80 (для HTTP→HTTPS редиректа).
+# ============================================================
+version: '3.8'
+
+services:
+  node_app:
+    build:
+      context: ../building       # билдим из папки с server.js и public/
+      dockerfile: ../docker-project/node/Dockerfile
+    container_name: building-node
+    restart: unless-stopped
+    expose:
+      - "52211"                  # видим только внутри сети, наружу не торчит
+    environment:
+      - NODE_ENV=production
+      - PORT=52211
+      - TRUST_PROXY=1            # сервер видит реальный IP через X-Forwarded-For
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:alpine
+    container_name: building-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"                  # HTTP redirect
+      - "52211:52211"            # HTTPS (главный)
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../building/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - node_app
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Услуги и цены - СтройМастер</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<main>
+    <section class="container">
+        <h2>Наши услуги и цены</h2>
+        <p style="text-align: center; margin-bottom: 50px; color: #5a6e7a;">Прозрачные цены, индивидуальный подход к каждому объекту</p>
+        
+        <!-- Демонтажные работы -->
+        <div id="demolition" class="service-category">
+            <h3>🔨 Демонтажные работы</h3>
+            <div class="price-range">💰 Цена: "Под ключ" от 10 000 ₽ за 1 м²</div>
+            <button class="category-request-btn" onclick="window.openModalWithService('Демонтажные работы (под ключ)')">📝 Оставить заявку на: <h1>Демонтажные работы "Под ключ"</h1></button>
+            <div class="services-list">
+                <div class="service-item"><span class="service-name">Демонтаж стен и перегородок</span><button class="request-btn" onclick="window.openModalWithService('Демонтаж стен и перегородок')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Снос стяжки и бетонных полов</span><button class="request-btn" onclick="window.openModalWithService('Снос стяжки и бетонных полов')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Демонтаж плитки, облицовки</span><button class="request-btn" onclick="window.openModalWithService('Демонтаж плитки, облицовки')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Вынос и утилизация строительного мусора</span><button class="request-btn" onclick="window.openModalWithService('Вынос и утилизация строительного мусора')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Алмазная резка бетона и железобетона</span><button class="request-btn" onclick="window.openModalWithService('Алмазная резка бетона и железобетона')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Дробление бетона</span><button class="request-btn" onclick="window.openModalWithService('Дробление бетона')">Оставить заявку</button></div>
+            </div>
+            <div class="service-footer">📞 Нужна консультация по демонтажу? <strong>Звоните!</strong></div>
+        </div>
+
+        <!-- Чистовая отделка -->
+        <div id="finishing" class="service-category">
+            <h3>✨ Чистовая отделка</h3>
+            <div class="price-range">💰 Цена: "Под ключ" от 12 000 до 45 000 ₽ за 1 м²</div>
+            <button class="category-request-btn" onclick="window.openModalWithService('Чистовая отделка (под ключ)')">📝 Оставить заявку на: <h1>Чистовая отделка "Под ключ"</h1></button>
+            <div class="services-list">
+                <div class="service-item"><span class="service-name">Шпаклёвка стен и потолков</span><button class="request-btn" onclick="window.openModalWithService('Шпаклёвка стен и потолков')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Покраска (водоэмульсионная, акриловая, масляная)</span><button class="request-btn" onclick="window.openModalWithService('Покраска (водоэмульсионная, акриловая, масляная)')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Поклейка обоев (любые типы)</span><button class="request-btn" onclick="window.openModalWithService('Поклейка обоев (любые типы)')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Укладка плитки (пол, стены, фартук)</span><button class="request-btn" onclick="window.openModalWithService('Укладка плитки (пол, стены, фартук)')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Наливные и самовыравнивающиеся полы</span><button class="request-btn" onclick="window.openModalWithService('Наливные и самовыравнивающиеся полы')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Монтаж плинтусов, галтелей, уголков</span><button class="request-btn" onclick="window.openModalWithService('Монтаж плинтусов, галтелей, уголков')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Отделка дверных и оконных откосов</span><button class="request-btn" onclick="window.openModalWithService('Отделка дверных и оконных откосов')">Оставить заявку</button></div>
+            </div>
+            <div class="service-footer">🏠 Сделаем квартиру идеальной — чистая отделка под ключ</div>
+        </div>
+
+        <!-- Черновая отделка -->
+        <div id="rough" class="service-category">
+            <h3>🏗️ Черновая отделка</h3>
+            <div class="price-range">💰 Цена: "Под ключ" от 17 000 до 25 000 ₽ за 1 м²</div>
+            <button class="category-request-btn" onclick="window.openModalWithService('Черновая отделка (под ключ)')">📝 Оставить заявку на: <h1>Черновая отделка "Под ключ"</h1></button>
+            <div class="services-list">
+                <div class="service-item"><span class="service-name">Стяжка пола (мокрая, полусухая, сухая)</span><button class="request-btn" onclick="window.openModalWithService('Стяжка пола (мокрая, полусухая, сухая)')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Штукатурка стен и потолков</span><button class="request-btn" onclick="window.openModalWithService('Штукатурка стен и потолков')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Монтаж перегородок (кирпич, газоблок, гипсокартон)</span><button class="request-btn" onclick="window.openModalWithService('Монтаж перегородок (кирпич, газоблок, гипсокартон)')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Грунтовка и подготовка поверхностей</span><button class="request-btn" onclick="window.openModalWithService('Грунтовка и подготовка поверхностей')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Звукоизоляция и шумоизоляция</span><button class="request-btn" onclick="window.openModalWithService('Звукоизоляция и шумоизоляция')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Черновая электрика (штробление, разводка кабелей)</span><button class="request-btn" onclick="window.openModalWithService('Черновая электрика (штробление, разводка кабелей)')">Оставить заявку</button></div>
+            </div>
+            <div class="service-footer">🔨 Подготовим помещение под чистовую отделку «под ключ»</div>
+        </div>
+
+
+        <!-- Строительство загородных домов -->
+        <div id="country" class="service-category">
+            <h3>🏠 Строительство загородных домов</h3>
+            <div class="price-range">💰 Цена: "Под ключ" от 35 000 ₽ за 1 м²</div>
+            <button class="category-request-btn" onclick="window.openModalWithService('Строительство загородных домов (под ключ)')">📝 Оставить заявку на: <h1>Строительство загородных домов "Под ключ"</h1></button>
+            <div class="services-list">
+                <div class="service-item"><span class="service-name">Строительство дома «под ключ» по Вашему проекту</span><button class="request-btn" onclick="window.openModalWithService('Строительство дома «под ключ» по Вашему проекту')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Разработка 3D-модели и дизайн-проекта</span><button class="request-btn" onclick="window.openModalWithService('Разработка 3D-модели и дизайн-проекта')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Строительство без проекта — по Вашим пожеланиям</span><button class="request-btn" onclick="window.openModalWithService('Строительство без проекта — по Вашим пожеланиям')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Дома из кирпича, газобетона, дерева, керамоблоков</span><button class="request-btn" onclick="window.openModalWithService('Дома из кирпича, газобетона, дерева, керамоблоков')">Оставить заявку</button></div>
+                <div class="service-item"><span class="service-name">Индивидуальный подход к каждому клиенту</span><button class="request-btn" onclick="window.openModalWithService('Индивидуальный подход к каждому клиенту')">Оставить заявку</button></div>
+            </div>
+            <div class="service-footer">🌟 Построим дом Вашей мечты — любой сложности и из любых материалов</div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 60px;">
+            <button class="btn btn-primary" onclick="window.openModal()">Заказать индивидуальный расчёт</button>
+        </div>
+    </section>
+</main>
+
+<script src="js/background-animation.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/config.js"></script>
+<script src="js/main.js"></script>
+<script src="js/cookie-consent.js"></script>
+
+</body>
+</html>
