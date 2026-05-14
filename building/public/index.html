@@ -15,55 +15,59 @@
 </div>
 
 <main>
+    <!-- ============================================
+         HERO — захват внимания + УТП + CTA
+    ============================================ -->
     <section class="hero">
         <div class="hero-content">
-            <h1><span data-site-name>СтройМастер</span></h1>
-            <p>Отделка (черновая, чистовая) • Демонтаж • Строительство загородных домов • Индивидуальный подход</p>
+            <span class="hero-badge">🛡 Договор · Гарантия 3 года · Без предоплаты за материал</span>
+            <h1><span data-site-name>Астрой</span></h1>
+            <p class="hero-subtitle">Строительство и отделка под ключ в Москве и области</p>
+            <p>Чёткие сроки в договоре. Прозрачная смета — все цены до начала работ. Бригады со средним стажем 8 лет.</p>
             <div class="hero-buttons">
-                <a href="services.html" class="btn btn-primary">Наши услуги</a>
-                <button class="btn btn-secondary" onclick="window.openModal()">Оставить заявку</button>
+                <button class="btn btn-primary" onclick="window.openModal()">Получить расчёт за 15 минут</button>
+                <a href="services.html" class="btn btn-secondary">Наши услуги</a>
             </div>
         </div>
     </section>
 
+    <!-- ============================================
+         СОЦИАЛЬНЫЕ ДОКАЗАТЕЛЬСТВА — цифры
+    ============================================ -->
+    <section class="container stats">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">10+</div>
+                <div class="stat-label">лет на рынке</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">200+</div>
+                <div class="stat-label">сданных объектов</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">98%</div>
+                <div class="stat-label">клиентов рекомендуют</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">3 года</div>
+                <div class="stat-label">гарантия на работы</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================
+         О КОМПАНИИ
+    ============================================ -->
     <section class="container">
         <h2>О компании</h2>
         <div style="max-width: 800px; margin: 0 auto; text-align: center;">
-            <p><span data-site-name></span> — команда профессионалов с более чем 10-летним опытом. Выполняем отделку и демонтаж. Строим загородные дома. Индивидуальный подход к каждому клиенту.</p>
+            <p><span data-site-name></span> — команда профессионалов с более чем 10-летним опытом. Выполняем отделку и демонтаж. Строим загородные дома. Каждый проект ведёт прораб, который ежедневно отчитывается по этапам и присылает фото-отчёт.</p>
         </div>
     </section>
 
-    <!-- ====== ОТЗЫВЫ ====== -->
-    <section class="container reviews">
-        <h2>Отзывы клиентов</h2>
-        <div class="reviews-grid">
-            <article class="review-card">
-                <div class="review-photo" aria-label="Фото клиента"></div>
-                <div class="review-stars" aria-label="Оценка 5 из 5">★★★★★</div>
-                <p class="review-text">Делали у меня капитальный ремонт двушки в Котельниках. Снесли стены, выровняли полы, переложили проводку. Работы выполнены аккуратно, в срок, мусор увезли в тот же день. Рекомендую!</p>
-                <div class="review-author">Алексей М. <span>Котельники</span></div>
-            </article>
-            <article class="review-card">
-                <div class="review-photo" aria-label="Фото клиента"></div>
-                <div class="review-stars" aria-label="Оценка 5 из 5">★★★★★</div>
-                <p class="review-text">Строили загородный дом «под ключ». Прораб был на связи каждый день, отчитывался по этапам, присылал фото. Получилось ровно так, как мы хотели по 3D-проекту. Спасибо!</p>
-                <div class="review-author">Елена и Андрей К. <span>Раменское</span></div>
-            </article>
-            <article class="review-card">
-                <div class="review-photo" aria-label="Фото клиента"></div>
-                <div class="review-stars" aria-label="Оценка 5 из 5">★★★★★</div>
-                <p class="review-text">Заказывал чистовую отделку — шпаклёвка, обои, плитка в ванной. Качество на уровне, стены идеально ровные. Цена соответствует тому, о чём договаривались, никаких «доплат потом».</p>
-                <div class="review-author">Дмитрий В. <span>Люберцы</span></div>
-            </article>
-            <article class="review-card">
-                <div class="review-photo" aria-label="Фото клиента"></div>
-                <div class="review-stars" aria-label="Оценка 5 из 5">★★★★★</div>
-                <p class="review-text">Делали демонтаж в старой квартире — снесли все перегородки, вывезли кафель и старую сантехнику. Работали быстро, договорились по телефону за 5 минут. Очень довольна!</p>
-                <div class="review-author">Марина С. <span>Москва, Жулебино</span></div>
-            </article>
-        </div>
-    </section>
-
+    <!-- ============================================
+         УСЛУГИ
+    ============================================ -->
     <section class="container">
         <h2>Наши услуги</h2>
         <div class="services-grid-2x2">
@@ -94,8 +98,146 @@
         </div>
     </section>
 
-    <section class="container" style="text-align: center;">
+    <!-- ============================================
+         НАШИ РАБОТЫ — портфолио
+         ШАБЛОН-РАБОТА ниже. Чтобы добавить новую работу:
+         1. Скопируй блок <article class="work-card">...</article>
+         2. Вставь ниже (или выше) внутри <div class="works-grid">
+         3. Поменяй пути к фото, заголовок, описание, теги
+    ============================================ -->
+    <section class="container works">
+        <h2>Наши работы</h2>
+        <p class="works-intro">Каждый проект — это сданный объект с фото «до и после». Кликни на карточку, чтобы посмотреть детали.</p>
+        <div class="works-grid">
+
+            <!-- ====== ШАБЛОН РАБОТЫ — КОПИРУЙ ПОЛНОСТЬЮ ОТ <article> ДО </article> ====== -->
+            <article class="work-card">
+                <div class="work-photo">
+                    <!-- Положи фото сюда: public/images/works/work-1-main.jpg -->
+                    <img src="images/works/work-1-main.jpg" alt="Капитальный ремонт двухкомнатной квартиры в Котельниках" loading="lazy" onerror="this.style.display='none';this.parentElement.classList.add('no-photo');">
+                    <div class="work-badge">📍 Котельники</div>
+                </div>
+                <div class="work-info">
+                    <h3>Капитальный ремонт двушки, 62 м²</h3>
+                    <p class="work-desc">Полный демонтаж, перепланировка, чистовая отделка, замена коммуникаций. Срок — 2,5 месяца.</p>
+                    <div class="work-tags">
+                        <span class="work-tag">Капремонт</span>
+                        <span class="work-tag">62 м²</span>
+                        <span class="work-tag">Сдан в срок</span>
+                    </div>
+                </div>
+            </article>
+            <!-- ====== КОНЕЦ ШАБЛОНА. КОПИРУЙ ВЫШЕ И ВСТАВЛЯЙ НИЖЕ ====== -->
+
+        </div>
+    </section>
+
+    <!-- ============================================
+         ПОЧЕМУ ВЫБИРАЮТ НАС
+    ============================================ -->
+    <section class="container">
+        <h2>Почему выбирают нас</h2>
+        <div class="why-grid">
+            <div class="why-item">
+                <div class="why-icon">📋</div>
+                <h3>Официальный договор</h3>
+                <p>Каждые работы оформляются договором с фиксированной ценой и сроками. Юридическая защита клиента.</p>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">💰</div>
+                <h3>Прозрачная смета</h3>
+                <p>Все позиции согласовываем до старта. Без скрытых платежей и доплат «по ходу».</p>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">📸</div>
+                <h3>Ежедневный фотоотчёт</h3>
+                <p>Прораб присылает фото каждого этапа в мессенджер. Вы видите весь процесс в реальном времени.</p>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">🛠</div>
+                <h3>Гарантия 3 года</h3>
+                <p>Бесплатно устраним любой дефект работ в течение 36 месяцев после сдачи объекта.</p>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">⏱</div>
+                <h3>Чёткие сроки</h3>
+                <p>Срок прописан в договоре. За задержку по нашей вине — пеня согласно договору.</p>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">👷</div>
+                <h3>Свои бригады</h3>
+                <p>Не нанимаем «случайных людей». Все мастера в штате, средний стаж работы — 8 лет.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================
+         ОТЗЫВЫ
+    ============================================ -->
+    <section class="container reviews">
+        <h2>Отзывы клиентов</h2>
+        <div class="reviews-grid">
+            <article class="review-card">
+                <div class="review-photo" aria-label="Фото клиента"></div>
+                <div class="review-stars" aria-label="Оценка 5 из 5">★★★★★</div>
+                <p class="review-text">Делали у меня капитальный ремонт двушки в Котельниках. Снесли стены, выровняли полы, переложили проводку. Работы выполнены аккуратно, в срок, мусор увезли в тот же день. Рекомендую!</p>
+                <div class="review-author">Алексей М. <span>Котельники</span></div>
+            </article>
+            <article class="review-card">
+                <div class="review-photo" aria-label="Фото клиента"></div>
+                <div class="review-stars" aria-label="Оценка 5 из 5">★★★★★</div>
+                <p class="review-text">Строили загородный дом «под ключ». Прораб был на связи каждый день, отчитывался по этапам, присылал фото. Получилось ровно так, как мы хотели по 3D-проекту. Спасибо!</p>
+                <div class="review-author">Елена и Андрей К. <span>Раменское</span></div>
+            </article>
+            <article class="review-card">
+                <div class="review-photo" aria-label="Фото клиента"></div>
+                <div class="review-stars" aria-label="Оценка 5 из 5">★★★★★</div>
+                <p class="review-text">Заказывал чистовую отделку — шпаклёвка, обои, плитка в ванной. Качество на уровне, стены идеально ровные. Цена соответствует тому, о чём договаривались, никаких «доплат потом».</p>
+                <div class="review-author">Дмитрий В. <span>Люберцы</span></div>
+            </article>
+        </div>
+    </section>
+
+    <!-- ============================================
+         КАК МЫ РАБОТАЕМ — снимает страх «непонятно как»
+    ============================================ -->
+    <section class="container">
+        <h2>Как мы работаем</h2>
+        <div class="steps-grid">
+            <div class="step-item">
+                <div class="step-num">1</div>
+                <h3>Заявка</h3>
+                <p>Оставляете заявку — перезваниваем за 15 минут.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-num">2</div>
+                <h3>Замер</h3>
+                <p>Приезжает мастер, бесплатно делает замер и расчёт.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-num">3</div>
+                <h3>Смета и договор</h3>
+                <p>Согласуем все позиции, подписываем договор.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-num">4</div>
+                <h3>Работа и отчёт</h3>
+                <p>Ведём работы, ежедневный фотоотчёт прорабу.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-num">5</div>
+                <h3>Сдача и гарантия</h3>
+                <p>Принимаете объект, гарантия 3 года в подарок.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================
+         ФИНАЛЬНЫЙ CTA
+    ============================================ -->
+    <section class="container cta-final">
         <h2>Нужен расчёт стоимости?</h2>
+        <p class="cta-sub">Перезвоним за 15 минут. Замер и смета — бесплатно.</p>
         <button class="btn btn-primary" onclick="window.openModal()">Оставить заявку</button>
     </section>
 </main>

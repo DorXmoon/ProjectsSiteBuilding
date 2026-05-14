@@ -1,41 +1,66 @@
 # ============================================================
-# Стек: Nginx (front, SSL termination) + Node.js (Express, бэк)
-# На роутере открыть один порт: 52211 TCP → этот хост.
-# Также рекомендуется проброс 80 → 80 (для HTTP→HTTPS редиректа).
+# PRODUCTION (Linux / NAS) — реальный IP клиента сохраняется
+#
+# Архитектура:
+#   Клиент → роутер NAT (443→52211) → NAS:52211
+#                                       ↓
+#                  Nginx (network_mode: host) — видит реальный IP
+#                                       ↓
+#                  Node (bridge, привязан к 127.0.0.1:3000 хоста)
+#
+# Почему network_mode: host:
+#   На Linux iptables/netfilter не подменяет source IP. Nginx читает
+#   $remote_addr и передаёт реальный IP клиента в X-Forwarded-For Node-у.
+#   Это standard pattern для входной точки на Linux.
+#
+# На роутере открыть:
+#   80    → NAS:80     (HTTP redirect)
+#   443   → NAS:52211  (HTTPS, основной)
+#
+# Запуск на NAS:
+#   cd /volume1/Web/ProjectsSiteBuilding/docker-project
+#   sudo docker compose up -d --build
+#
+# Запуск на ПК (dev, Windows):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 # ============================================================
-version: '3.8'
 
 services:
   node_app:
     build:
-      context: ../building       # билдим из папки с server.js и public/
+      context: ../building
       dockerfile: ../docker-project/node/Dockerfile
     container_name: building-node
     restart: unless-stopped
-    expose:
-      - "52211"                  # видим только внутри сети, наружу не торчит
+    # 127.0.0.1:3000 — доступен только с самого хоста (для Nginx в host-режиме).
+    # Извне LAN/интернета этот порт не виден.
+    ports:
+      - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=production
-      - PORT=52211
-      - TRUST_PROXY=1            # сервер видит реальный IP через X-Forwarded-For
-    networks:
-      - internal
+      - PORT=3000
+      - TRUST_PROXY=1
+    env_file:
+      - ../building/.env
+    volumes:
+      - ../building/construction.db:/app/construction.db
+      - ../building/blocked_ips.json:/app/blocked_ips.json
+      - ../building/server.js:/app/server.js
+      - ../building/public:/app/public
+      # Логи приложения: access / security / callbacks / admin (JSON-Lines)
+      - ../building/logs:/app/logs
 
   nginx:
     image: nginx:alpine
     container_name: building-nginx
     restart: unless-stopped
-    ports:
-      - "80:80"                  # HTTP redirect
-      - "52211:52211"            # HTTPS (главный)
+    # КЛЮЧЕВАЯ СТРОКА: Nginx использует сетевой стек хоста,
+    # source IP клиента не подменяется на docker bridge.
+    network_mode: host
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ../building/ssl:/etc/nginx/ssl:ro
+      # Nginx access/error логи летят сюда (дополнительно к docker logs)
+      - ../building/logs/nginx:/var/log/nginx-host
     depends_on:
       - node_app
-    networks:
-      - internal
-
-networks:
-  internal:
-    driver: bridge

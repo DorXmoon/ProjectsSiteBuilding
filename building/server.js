@@ -15,7 +15,10 @@ const https = require('https');
 const app = express();
 // trust proxy ДО любых middleware, иначе req.ip = адрес прокси/loopback,
 // а не реальный клиент → банлист, rate-limit и логи писали кашу.
-app.set('trust proxy', 1);
+// В Docker с Nginx значение 1 не всегда срабатывает (зависит от цепочки X-Forwarded-For),
+// поэтому доверяем всем приватным сетям + loopback. Безопасно: Node наружу не торчит,
+// внутрь docker-сети может попасть только Nginx, который и проставляет реальный IP клиента.
+app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
 const PORT = process.env.PORT || 52211;
 
 // compression — раньше не было, html/css/js летели несжатыми
@@ -90,6 +93,62 @@ const blockedPatterns = [
     'config.json', 'settings.json', '.aws', 'passwd', 'shadow'
 ];
 
+// ========== ФАЙЛОВОЕ ЛОГИРОВАНИЕ ==========
+// Принцип: логируем ТОЛЬКО ИНЦИДЕНТЫ, не каждый клик.
+// Категории: security (атаки), callbacks (заявки), admin (вход в админку),
+//            errors (ошибки сервера). НЕТ access-лога — это работа Nginx.
+//
+// PII (ФЗ-152): IP считаем персональными данными → law basis = «законный
+// интерес» (ст. 6 ч.1 п.7) для security/admin. Callbacks — есть согласие
+// от пользователя через форму.
+//
+// Защита от лог-бомб: User-Agent обрезаем до 200 символов, длинные поля — до 500.
+// Ротация: при размере >5MB файл переименовывается в .1 (хранится 1 старая копия).
+const LOG_DIR = path.join(__dirname, 'logs');
+try { fs.mkdirSync(LOG_DIR, { recursive: true }); } catch(e) { /* exists */ }
+
+const MAX_LOG_BYTES = 5 * 1024 * 1024; // 5MB
+const _logSizeCache = new Map(); // category -> { size, lastCheck }
+
+function clipStr(s, max) {
+    if (s == null) return '';
+    s = String(s);
+    return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
+function sanitizePayload(p) {
+    const out = {};
+    for (const k of Object.keys(p)) {
+        if (k === 'ua') out[k] = clipStr(p[k], 200);
+        else if (typeof p[k] === 'string') out[k] = clipStr(p[k], 500);
+        else out[k] = p[k];
+    }
+    return out;
+}
+
+function rotateIfNeeded(file) {
+    fs.stat(file, (err, st) => {
+        if (err || st.size < MAX_LOG_BYTES) return;
+        fs.rename(file, file + '.1', () => { /* atomic; current удалится при следующем appendFile */ });
+    });
+}
+
+function logToFile(category, payload) {
+    const safe = sanitizePayload(payload);
+    const line = JSON.stringify({ ts: new Date().toISOString(), ...safe }) + '\n';
+    const file = path.join(LOG_DIR, `${category}.log`);
+    fs.appendFile(file, line, () => {
+        // Проверять размер на каждый append дорого. Делаем debounced проверку.
+        const now = Date.now();
+        const cache = _logSizeCache.get(category) || { lastCheck: 0 };
+        if (now - cache.lastCheck > 60_000) { // раз в минуту
+            cache.lastCheck = now;
+            _logSizeCache.set(category, cache);
+            rotateIfNeeded(file);
+        }
+    });
+}
+
 // ========== ПОСТОЯННАЯ БЛОКИРОВКА АТАКУЮЩИХ IP (НАВСЕГДА) ==========
 const BLOCKED_IPS_FILE = path.join(__dirname, 'blocked_ips.json');
 
@@ -149,65 +208,74 @@ app.use((req, res, next) => {
     const url = req.url.toLowerCase();
     const method = req.method;
     const ua = req.headers['user-agent'] || '';
-    
+
     // 1. Проверка на перманентно заблокированные IP (НАВСЕГДА!)
     if (blockedIPs.has(ip)) {
         console.log(`🚫 ПЕРМАНЕНТНО ЗАБЛОКИРОВАН: ${ip} - ${method} ${url}`);
+        logToFile('security', { event: 'permanent_block_hit', ip, method, url, ua });
         return res.status(403).send('Access Denied - Your IP has been permanently blocked');
     }
-    
+
     // 2. Проверка на сканеры (по подозрительным путям)
     if (isScannerRequest(url)) {
         // Увеличиваем счётчик (НИКОГДА НЕ СБРАСЫВАЕТСЯ)
         const hits = (ipHits.get(ip) || 0) + 1;
         ipHits.set(ip, hits);
-        
+
         console.log(`⚠️ ПОДОЗРИТЕЛЬНЫЙ IP: ${ip} (попытка #${hits}) - ${method} ${url}`);
+        logToFile('security', { event: 'scanner_attempt', ip, hits, method, url, ua });
         logAttackToDB(ip, url, method, ua);
-        
+
         // После 3 попыток — блокируем НАВСЕГДА (счётчик больше не обнуляется)
         if (hits >= 3) {
             blockedIPs.add(ip);
             saveBlockedIPs();
             console.log(`🔒 IP ${ip} ЗАБЛОКИРОВАН НАВСЕГДА (3 подозрительные попытки)`);
+            logToFile('security', { event: 'permanent_block_added', reason: 'scanner_3hits', ip, method, url, ua });
             logAttackToDB(ip, url, method, ua, 'заблокирован навсегда');
             return res.status(403).send('Access Denied - Your IP has been permanently blocked');
         }
-        
+
         return res.status(403).send('Access Denied');
     }
-    
+
     // 3. Блокировка по опасным методам
     const dangerousMethods = ['TRACE', 'TRACK', 'DELETE', 'PUT', 'CONNECT', 'PATCH'];
     if (dangerousMethods.includes(method)) {
         const hits = (ipHits.get(ip) || 0) + 1;
         ipHits.set(ip, hits);
         console.log(`🚫 БЛОКИРОВАН МЕТОД: ${method} от ${ip} (попытка #${hits})`);
+        logToFile('security', { event: 'dangerous_method', ip, hits, method, url, ua });
         logAttackToDB(ip, url, method, ua, 'опасный метод');
-        
+
         if (hits >= 3) {
             blockedIPs.add(ip);
             saveBlockedIPs();
             console.log(`🔒 IP ${ip} ЗАБЛОКИРОВАН НАВСЕГДА (3 опасных метода)`);
+            logToFile('security', { event: 'permanent_block_added', reason: 'methods_3hits', ip, method, url, ua });
         }
         return res.status(405).send('Method Not Allowed');
     }
-    
+
     // 4. Блокировка по User-Agent (боты) — компилируется один раз сверху
     if (BLOCKED_UA_RE.test(ua)) {
         const hits = (ipHits.get(ip) || 0) + 1;
         ipHits.set(ip, hits);
         console.log(`🚫 БЛОКИРОВАН БОТ: ${ua} от ${ip} (попытка #${hits})`);
+        logToFile('security', { event: 'bad_user_agent', ip, hits, method, url, ua });
         logAttackToDB(ip, url, method, ua, 'бот/сканер');
-        
+
         if (hits >= 3) {
             blockedIPs.add(ip);
             saveBlockedIPs();
             console.log(`🔒 IP ${ip} ЗАБЛОКИРОВАН НАВСЕГДА (бот)`);
+            logToFile('security', { event: 'permanent_block_added', reason: 'bot_3hits', ip, method, url, ua });
         }
         return res.status(403).send('Access Denied');
     }
-    
+
+    // Обычные запросы НЕ логируем (это спам диску + DDoS-усилитель).
+    // Если нужен общий журнал доступа — он есть в nginx/access.log на хосте.
     next();
 });
 
@@ -278,8 +346,10 @@ app.get(`/admin-${adminSecret}`, (req, res) => {
 app.post(`/admin-${adminSecret}/login`, adminLimiter, express.urlencoded({ extended: true }), (req, res) => {
     if (req.body.password === ADMIN_PASSWORD) {
         res.cookie('admin_auth', adminSecret, { httpOnly: true, maxAge: 3600000, path: '/', sameSite: 'lax' });
+        logToFile('admin', { event: 'login_success', ip: req.ip, ua: req.headers['user-agent'] || '' });
         res.redirect(`/admin-${adminSecret}/dashboard`);
     } else {
+        logToFile('admin', { event: 'login_fail', ip: req.ip, ua: req.headers['user-agent'] || '' });
         res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ошибка</title></head><body style="background:#0a0a0a;color:#e0e0e0;text-align:center;padding:50px;"><h1 style="color:#c4511b">❌ Неверный пароль</h1><a href="/admin-${adminSecret}" style="color:#c4511b">← Вернуться</a></body></html>`);
     }
 });
@@ -319,11 +389,28 @@ app.get(`/admin-${adminSecret}/dashboard`, (req, res) => {
             th,td{padding:12px;text-align:left;border-bottom:1px solid #4a4a4a}
             th{background:#4a4a4a;color:#c4511b}
             tr:hover{background:#3a3a3a}
+            /* ====== ПАНЕЛЬ ЛОГОВ ====== */
+            .logs-panel{background:#1a1a1a;border:1px solid #c4511b;border-radius:8px;margin-bottom:30px;overflow:hidden;height:50vh;display:flex;flex-direction:column}
+            .logs-head{display:flex;align-items:center;background:#2d2d2d;padding:10px 14px;gap:6px;border-bottom:1px solid #4a4a4a;flex-wrap:wrap}
+            .logs-head .title{font-weight:bold;color:#c4511b;margin-right:auto}
+            .logs-tab{background:#1a1a1a;color:#aaa;border:1px solid #4a4a4a;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px}
+            .logs-tab.active{background:#c4511b;color:#fff;border-color:#c4511b}
+            .logs-refresh{font-size:12px;color:#7a8a96;margin-left:8px}
+            .logs-body{flex:1;overflow:auto;font-family:'Consolas','Courier New',monospace;font-size:12.5px;padding:10px 14px;background:#0e0e0e}
+            .log-line{padding:4px 6px;border-bottom:1px dashed #2a2a2a;line-height:1.4;word-break:break-all}
+            .log-line .ts{color:#7a8a96;margin-right:8px}
+            .log-line .ip{color:#4fc3f7;font-weight:bold}
+            .log-line .ev{color:#ffb74d;margin:0 6px}
+            .log-line.security{color:#ff7373}
+            .log-line.admin{color:#b39ddb}
+            .log-line.callbacks{color:#81c784}
+            .log-line.access{color:#cfd8dc}
             @media(max-width:768px){
                 body{padding:10px}
                 .stats{flex-direction:column}
                 .stat-card{width:100%}
                 th,td{padding:8px;font-size:12px}
+                .logs-panel{height:45vh}
             }
         </style>
         </head>
@@ -336,7 +423,55 @@ app.get(`/admin-${adminSecret}/dashboard`, (req, res) => {
                 <div class="stats">
                     <div class="stat-card"><div class="number">${rows.length}</div><div>Всего заявок</div></div>
                     <div class="stat-card"><div class="number">${Object.keys(grouped).length}</div><div>Дней с заявками</div></div>
-                </div>`;
+                </div>
+
+                <!-- ====== ПАНЕЛЬ ЛОГОВ ====== -->
+                <div class="logs-panel">
+                    <div class="logs-head">
+                        <span class="title">📜 Логи в реальном времени</span>
+                        <button class="logs-tab active" data-cat="security">Безопасность</button>
+                        <button class="logs-tab" data-cat="callbacks">Заявки</button>
+                        <button class="logs-tab" data-cat="admin">Админка</button>
+                        <button class="logs-tab" data-cat="errors">Ошибки</button>
+                        <span class="logs-refresh">обновляется каждые 5с</span>
+                    </div>
+                    <div class="logs-body" id="logsBody">Загрузка...</div>
+                </div>
+                <script>
+                (function(){
+                    var current='security', body=document.getElementById('logsBody');
+                    function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+                    function render(cat,lines){
+                        if(!lines.length){body.innerHTML='<div style="color:#7a8a96;padding:20px">Логов ещё нет</div>';return;}
+                        body.innerHTML=lines.map(function(l){
+                            var ts=l.ts?new Date(l.ts).toLocaleString('ru-RU'):'';
+                            var ev=l.event||'';
+                            var ip=l.ip||'';
+                            var rest=Object.keys(l).filter(function(k){return['ts','event','ip','ua'].indexOf(k)<0;}).map(function(k){return k+'='+(typeof l[k]==='object'?JSON.stringify(l[k]):l[k]);}).join(' ');
+                            return '<div class="log-line '+cat+'"><span class="ts">'+escapeHtml(ts)+'</span>'+
+                                   (ip?'<span class="ip">'+escapeHtml(ip)+'</span>':'')+
+                                   (ev?'<span class="ev">['+escapeHtml(ev)+']</span>':'')+
+                                   '<span>'+escapeHtml(rest)+'</span></div>';
+                        }).join('');
+                    }
+                    function load(){
+                        fetch('/admin-${adminSecret}/api/logs?category='+current+'&limit=200',{credentials:'same-origin'})
+                          .then(function(r){return r.json();})
+                          .then(function(d){render(current,d.lines||[]);})
+                          .catch(function(){body.innerHTML='<div style="color:#ff7373;padding:20px">Ошибка загрузки логов</div>';});
+                    }
+                    document.querySelectorAll('.logs-tab').forEach(function(t){
+                        t.addEventListener('click',function(){
+                            document.querySelectorAll('.logs-tab').forEach(function(x){x.classList.remove('active');});
+                            t.classList.add('active');
+                            current=t.dataset.cat;
+                            load();
+                        });
+                    });
+                    load();
+                    setInterval(load,5000);
+                })();
+                </script>`;
         
         for (const [day, dayRows] of Object.entries(grouped)) {
             html += `<div class="day-group">
@@ -422,6 +557,36 @@ app.get(`/admin-${adminSecret}/logout`, (req, res) => {
     res.redirect(`/admin-${adminSecret}`);
 });
 
+// API для чтения логов (используется в дашборде, обновление в реальном времени)
+const ALLOWED_LOG_CATEGORIES = new Set(['security', 'callbacks', 'admin', 'errors']);
+app.get(`/admin-${adminSecret}/api/logs`, (req, res) => {
+    if ((req.cookies && req.cookies.admin_auth) !== adminSecret) return res.status(403).json({ error: 'forbidden' });
+    const category = String(req.query.category || 'access');
+    if (!ALLOWED_LOG_CATEGORIES.has(category)) return res.status(400).json({ error: 'bad category' });
+    const limit = Math.min(parseInt(req.query.limit, 10) || 200, 1000);
+
+    const file = path.join(LOG_DIR, `${category}.log`);
+    fs.stat(file, (err, st) => {
+        if (err) return res.json({ lines: [] });
+        // Читаем последние 512KB файла — даже при больших логах ответ быстрый.
+        const READ_BYTES = 512 * 1024;
+        const start = Math.max(0, st.size - READ_BYTES);
+        const chunks = [];
+        fs.createReadStream(file, { start, end: st.size })
+            .on('data', c => chunks.push(c))
+            .on('end', () => {
+                const text = Buffer.concat(chunks).toString('utf8');
+                const lines = text.split('\n').filter(Boolean);
+                // Если начали с середины строки — отбрасываем первую (может быть «битой»).
+                if (start > 0 && lines.length > 0) lines.shift();
+                const tail = lines.slice(-limit).reverse(); // новые сверху
+                const parsed = tail.map(l => { try { return JSON.parse(l); } catch { return { raw: l }; } });
+                res.json({ lines: parsed });
+            })
+            .on('error', e => res.status(500).json({ error: String(e) }));
+    });
+});
+
 // ========== БАЗА ДАННЫХ ==========
 const db = new sqlite3.Database(path.join(__dirname, 'construction.db'));
 
@@ -503,9 +668,11 @@ app.post('/api/callback', formLimiter, [
     insertCallbackStmt.run(name, phone, info || '', req.ip, function(err) {
         if (err) {
             console.error('❌ Ошибка БД:', err);
+            logToFile('callbacks', { event: 'db_error', err: String(err), ip: req.ip });
             return res.json({ success: false, error: 'Ошибка сервера' });
         }
         console.log(`✅ Новая заявка #${this.lastID}: ${name} - ${phone}`);
+        logToFile('callbacks', { event: 'new_callback', id: this.lastID, name, phone, info, ip: req.ip, ua: req.headers['user-agent'] || '' });
         res.json({ success: true, message: 'Заявка принята! Мы свяжемся с вами.' });
     });
 });
@@ -545,47 +712,60 @@ app.post('/api/cookie-consent', consentLimiter, [
     );
 });
 
-// ========== HTTPS СЕРВЕР ==========
-const sslPath = path.join(__dirname, 'ssl');
-const hasSSL = fs.existsSync(path.join(sslPath, 'privkey.pem')) && fs.existsSync(path.join(sslPath, 'cert.pem'));
+// ========== ЗАПУСК СЕРВЕРА ==========
+// Production (Docker): plain HTTP на 0.0.0.0 — SSL терминирует Nginx снаружи.
+// Local dev: HTTPS если есть сертификаты, иначе HTTP.
 
-if (hasSSL) {
-    try {
-        const sslOptions = {
-            key: fs.readFileSync(path.join(sslPath, 'privkey.pem')),
-            cert: fs.readFileSync(path.join(sslPath, 'cert.pem'))
-        };
-        https.createServer(sslOptions, app).listen(PORT, '127.0.0.1', () => {
-            const localIp = getLocalIp();
-            console.log(`
+const sslPath = path.join(__dirname, 'ssl');
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`
     ╔══════════════════════════════════════════════════════════╗
-    ║   🔒 HTTPS СЕРВЕР ЗАПУЩЕН                                ║
-    ║   🌍 САЙТ:        https://${localIp}:${PORT}              ║
-    ║   🔐 АДМИНКА:     https://${localIp}:${PORT}/admin-${adminSecret} ║
-    ╚══════════════════════════════════════════════════════════╝
-            `);
-            console.log(`\n🔐 СЕКРЕТНЫЙ ПУТЬ К АДМИНКЕ: /admin-${adminSecret}\n`);
-        });
-    } catch (err) {
-        console.log('❌ Ошибка загрузки сертификатов:', err.message);
+    ║   🐳 DOCKER HTTP СЕРВЕР ЗАПУЩЕН                          ║
+    ║   🌐 http://0.0.0.0:${PORT} (за Nginx)                    ║
+    ╚══════════════════════════════════════════════════════════╝`);
+        console.log(`🔐 СЕКРЕТНЫЙ ПУТЬ К АДМИНКЕ: /admin-${adminSecret}\n`);
+    });
+} else {
+    const hasSSL = fs.existsSync(path.join(sslPath, 'privkey.pem')) && fs.existsSync(path.join(sslPath, 'cert.pem'));
+    if (hasSSL) {
+        try {
+            const sslOptions = {
+                key: fs.readFileSync(path.join(sslPath, 'privkey.pem')),
+                cert: fs.readFileSync(path.join(sslPath, 'cert.pem'))
+            };
+            https.createServer(sslOptions, app).listen(PORT, '0.0.0.0', () => {
+                const localIp = getLocalIp();
+                console.log(`
+    ╔══════════════════════════════════════════════════════════╗
+    ║   🔒 HTTPS СЕРВЕР ЗАПУЩЕН (локально)                     ║
+    ║   🌍 САЙТ:    https://${localIp}:${PORT}                  ║
+    ║   🔐 АДМИНКА: https://${localIp}:${PORT}/admin-${adminSecret} ║
+    ╚══════════════════════════════════════════════════════════╝`);
+                console.log(`🔐 СЕКРЕТНЫЙ ПУТЬ К АДМИНКЕ: /admin-${adminSecret}\n`);
+            });
+        } catch (err) {
+            console.log('❌ Ошибка загрузки сертификатов:', err.message);
+            startHttpServer();
+        }
+    } else {
+        console.log('⚠️ SSL сертификаты не найдены, запускаем HTTP сервер');
         startHttpServer();
     }
-} else {
-    console.log('⚠️ SSL сертификаты не найдены, запускаем HTTP сервер');
-    startHttpServer();
 }
 
 function startHttpServer() {
-    app.listen(PORT, '127.0.0.1', () => {
+    app.listen(PORT, '0.0.0.0', () => {
         const localIp = getLocalIp();
         console.log(`
     ╔══════════════════════════════════════════════════════════╗
     ║   🌐 HTTP СЕРВЕР ЗАПУЩЕН                                 ║
-    ║   🌍 САЙТ:        http://${localIp}:${PORT}               ║
-    ║   🔐 АДМИНКА:     http://${localIp}:${PORT}/admin-${adminSecret} ║
-    ╚══════════════════════════════════════════════════════════╝
-        `);
-        console.log(`\n🔐 СЕКРЕТНЫЙ ПУТЬ К АДМИНКЕ: /admin-${adminSecret}\n`);
+    ║   🌍 САЙТ:    http://${localIp}:${PORT}                   ║
+    ║   🔐 АДМИНКА: http://${localIp}:${PORT}/admin-${adminSecret} ║
+    ╚══════════════════════════════════════════════════════════╝`);
+        console.log(`🔐 СЕКРЕТНЫЙ ПУТЬ К АДМИНКЕ: /admin-${adminSecret}\n`);
     });
 }
 

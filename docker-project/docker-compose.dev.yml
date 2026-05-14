@@ -1,0 +1,30 @@
+# ============================================================
+# DEV-OVERRIDE для ПК (Windows). Docker Desktop под Windows не умеет
+# host networking как Linux, поэтому здесь возвращаемся к bridge.
+# Реальный IP клиента в БД при этом теряется — это нормально для dev.
+#
+# Запуск на ПК:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# ============================================================
+
+services:
+  node_app:
+    # Отменяем привязку к 127.0.0.1, используем internal bridge
+    ports: !reset []
+    expose:
+      - "3000"
+    networks:
+      - internal
+
+  nginx:
+    # Отменяем network_mode: host — на Windows не работает корректно
+    network_mode: ""
+    ports:
+      - "80:80"
+      - "52211:52211"
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

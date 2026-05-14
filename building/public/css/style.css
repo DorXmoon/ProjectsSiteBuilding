@@ -1239,3 +1239,262 @@ footer {
 .contact-card {
     -webkit-tap-highlight-color: transparent;
 }
+
+/* ============================================
+   HERO — бейдж и подзаголовок
+============================================ */
+.hero-badge {
+    display: inline-block;
+    background: rgba(26, 95, 122, 0.1);
+    color: #1a5f7a;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    border: 1px solid rgba(26, 95, 122, 0.2);
+}
+.hero-subtitle {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #1a5f7a;
+    margin-bottom: 12px;
+}
+
+/* ============================================
+   ЦИФРЫ (stats)
+============================================ */
+.stats {
+    margin-top: -20px;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.stat-item {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e0e4e8;
+    border-radius: 16px;
+    padding: 24px 16px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.stat-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(26, 95, 122, 0.12);
+}
+.stat-number {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #1a5f7a;
+    line-height: 1;
+    margin-bottom: 8px;
+    font-family: 'Montserrat', sans-serif;
+}
+.stat-label {
+    font-size: 0.92rem;
+    color: #2d3e50;
+}
+@media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .stat-number { font-size: 1.9rem; }
+}
+
+/* ============================================
+   НАШИ РАБОТЫ
+============================================ */
+.works-intro {
+    text-align: center;
+    max-width: 700px;
+    margin: -25px auto 35px;
+    color: #5a6b78;
+}
+.works-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+.work-card {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e0e4e8;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+}
+.work-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(26, 95, 122, 0.15);
+}
+.work-photo {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(135deg, #1a5f7a 0%, #2d3e50 100%);
+    overflow: hidden;
+}
+.work-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.work-photo.no-photo::before {
+    content: '🏗';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    opacity: 0.3;
+}
+.work-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1a5f7a;
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    backdrop-filter: blur(6px);
+}
+.work-info {
+    padding: 20px 22px 22px;
+}
+.work-info h3 {
+    font-size: 1.15rem;
+    color: #1a5f7a;
+    margin-bottom: 10px;
+}
+.work-desc {
+    color: #5a6b78;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+.work-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.work-tag {
+    background: rgba(26, 95, 122, 0.08);
+    color: #1a5f7a;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+@media (max-width: 600px) {
+    .works-grid { grid-template-columns: 1fr; gap: 16px; }
+    .work-info { padding: 16px 18px 18px; }
+}
+
+/* ============================================
+   ПОЧЕМУ ВЫБИРАЮТ НАС
+============================================ */
+.why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 22px;
+}
+.why-item {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e0e4e8;
+    border-left: 4px solid #1a5f7a;
+    border-radius: 12px;
+    padding: 22px 24px;
+    transition: transform 0.25s, box-shadow 0.25s;
+}
+.why-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(26, 95, 122, 0.1);
+}
+.why-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    line-height: 1;
+}
+.why-item h3 {
+    color: #1a5f7a;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+.why-item p {
+    color: #5a6b78;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+/* ============================================
+   КАК МЫ РАБОТАЕМ (шаги)
+============================================ */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    position: relative;
+}
+.step-item {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e0e4e8;
+    border-radius: 14px;
+    padding: 24px 16px;
+    position: relative;
+    transition: transform 0.3s;
+}
+.step-item:hover { transform: translateY(-3px); }
+.step-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1a5f7a;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin: 0 auto 14px;
+    font-family: 'Montserrat', sans-serif;
+}
+.step-item h3 {
+    color: #1a5f7a;
+    font-size: 1.02rem;
+    margin-bottom: 6px;
+}
+.step-item p {
+    color: #5a6b78;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+@media (max-width: 900px) {
+    .steps-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+    .steps-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================
+   ФИНАЛЬНЫЙ CTA
+============================================ */
+.cta-final {
+    text-align: center;
+}
+.cta-sub {
+    color: #5a6b78;
+    margin: -20px auto 28px;
+    max-width: 500px;
+    font-size: 1.05rem;
+}
