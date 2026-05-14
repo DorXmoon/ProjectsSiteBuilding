@@ -150,30 +150,54 @@ function logToFile(category, payload) {
 }
 
 // ========== ПОСТОЯННАЯ БЛОКИРОВКА АТАКУЮЩИХ IP (НАВСЕГДА) ==========
-const BLOCKED_IPS_FILE = path.join(__dirname, 'blocked_ips.json');
-
+// Перманентные блокировки лежат в SQLite (таблица blocked_ips_permanent).
+// БД на хосте через volume → переживает перезапуск контейнера.
+// blockedIPs Set — кэш в памяти для быстрой проверки в middleware.
 let blockedIPs = new Set();
-try {
-    if (fs.existsSync(BLOCKED_IPS_FILE)) {
-        const data = JSON.parse(fs.readFileSync(BLOCKED_IPS_FILE, 'utf8'));
-        blockedIPs = new Set(data);
-        console.log(`🚫 Загружено ${blockedIPs.size} заблокированных IP из файла`);
-    }
-} catch(e) { console.log('⚠️ Нет файла с заблокированными IP'); }
 
-// Async + debounced — раньше fs.writeFileSync делался прямо в request-path
-// при флуде сканеров → event loop стопорился, файл рисковал биться.
-let _saveBlockedTimer = null;
-function saveBlockedIPs() {
-    if (_saveBlockedTimer) return;
-    _saveBlockedTimer = setTimeout(() => {
-        _saveBlockedTimer = null;
-        const tmp = BLOCKED_IPS_FILE + '.tmp';
-        fs.writeFile(tmp, JSON.stringify([...blockedIPs]), 'utf8', (err) => {
-            if (err) return console.error('blocked_ips write fail:', err);
-            fs.rename(tmp, BLOCKED_IPS_FILE, () => {});
-        });
-    }, 500);
+// Загрузка из БД при старте. Вызывается из db.serialize() после CREATE TABLE.
+function loadBlockedIPsFromDB() {
+    db.all('SELECT ip_address FROM blocked_ips_permanent', [], (err, rows) => {
+        if (err) return console.error('❌ Не удалось загрузить blocked_ips_permanent:', err);
+        rows.forEach(r => blockedIPs.add(r.ip_address));
+        console.log(`🚫 Загружено ${blockedIPs.size} перманентных блокировок из БД`);
+    });
+}
+
+// Одноразовая миграция: если в legacy blocked_ips.json есть IP — перенести их в БД.
+// Файл не удаляем (он смонтирован как bind mount), а очищаем до [] чтобы повторно не мигрировать.
+function migrateLegacyBlockedJSON() {
+    const legacy = path.join(__dirname, 'blocked_ips.json');
+    fs.readFile(legacy, 'utf8', (err, data) => {
+        if (err) return;
+        try {
+            const arr = JSON.parse(data);
+            if (!Array.isArray(arr) || arr.length === 0) return;
+            const stmt = db.prepare('INSERT OR IGNORE INTO blocked_ips_permanent (ip_address, reason) VALUES (?, ?)');
+            arr.forEach(ip => stmt.run(ip, 'legacy-json'));
+            stmt.finalize(() => {
+                arr.forEach(ip => blockedIPs.add(ip));
+                fs.writeFile(legacy, '[]', () => {});
+                console.log(`📦 Мигрировано ${arr.length} IP из blocked_ips.json в БД`);
+            });
+        } catch (e) {
+            console.error('⚠️ Не удалось распарсить blocked_ips.json:', e.message);
+        }
+    });
+}
+
+// Добавляет IP в перманентный блок: сразу в кэш + сразу в БД (без debounce).
+// БД лежит на хосте через volume — запись переживает рестарт контейнера.
+function addPermanentBlock(ip, reason) {
+    if (blockedIPs.has(ip)) return;
+    blockedIPs.add(ip);
+    db.run(
+        'INSERT OR IGNORE INTO blocked_ips_permanent (ip_address, reason) VALUES (?, ?)',
+        [ip, reason || 'auto'],
+        (err) => {
+            if (err) console.error('❌ Ошибка записи blocked_ips_permanent:', err);
+        }
+    );
 }
 
 // Счётчик подозрительных запросов (НЕ СБРАСЫВАЕТСЯ, ПОКА НЕ ЗАБЛОКИРУЕТ)
@@ -228,8 +252,7 @@ app.use((req, res, next) => {
 
         // После 3 попыток — блокируем НАВСЕГДА (счётчик больше не обнуляется)
         if (hits >= 3) {
-            blockedIPs.add(ip);
-            saveBlockedIPs();
+            addPermanentBlock(ip, 'scanner_3hits');
             console.log(`🔒 IP ${ip} ЗАБЛОКИРОВАН НАВСЕГДА (3 подозрительные попытки)`);
             logToFile('security', { event: 'permanent_block_added', reason: 'scanner_3hits', ip, method, url, ua });
             logAttackToDB(ip, url, method, ua, 'заблокирован навсегда');
@@ -249,8 +272,7 @@ app.use((req, res, next) => {
         logAttackToDB(ip, url, method, ua, 'опасный метод');
 
         if (hits >= 3) {
-            blockedIPs.add(ip);
-            saveBlockedIPs();
+            addPermanentBlock(ip, 'methods_3hits');
             console.log(`🔒 IP ${ip} ЗАБЛОКИРОВАН НАВСЕГДА (3 опасных метода)`);
             logToFile('security', { event: 'permanent_block_added', reason: 'methods_3hits', ip, method, url, ua });
         }
@@ -266,8 +288,7 @@ app.use((req, res, next) => {
         logAttackToDB(ip, url, method, ua, 'бот/сканер');
 
         if (hits >= 3) {
-            blockedIPs.add(ip);
-            saveBlockedIPs();
+            addPermanentBlock(ip, 'bot_3hits');
             console.log(`🔒 IP ${ip} ЗАБЛОКИРОВАН НАВСЕГДА (бот)`);
             logToFile('security', { event: 'permanent_block_added', reason: 'bot_3hits', ip, method, url, ua });
         }
@@ -620,7 +641,18 @@ db.serialize(() => {
         reason TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
-    
+
+    // Перманентные блокировки (переживают рестарт контейнера, лежат на хосте через volume)
+    db.run(`CREATE TABLE IF NOT EXISTS blocked_ips_permanent (
+        ip_address TEXT PRIMARY KEY,
+        reason TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`, (err) => {
+        if (err) return console.error('❌ blocked_ips_permanent CREATE:', err);
+        loadBlockedIPsFromDB();
+        migrateLegacyBlockedJSON();
+    });
+
     console.log('✅ База данных инициализирована');
 });
 
